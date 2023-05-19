@@ -169,3 +169,46 @@ void City::AddDestination(Destination d)
 {
     DestinationsToBeVisited.push_back(d);
 }
+
+double APIManager::get_latitude(const string& place_name)
+{
+    CURL* curl = curl_easy_init();
+    if (curl) {
+        // Set the Mapbox Geocoding API endpoint
+        string url = "https://api.mapbox.com/geocoding/v5/mapbox.places/";
+        string place = place_name;  // Replace with the desired place
+        string accessToken = "pk.eyJ1Ijoic2FhZGFzaHJhZiIsImEiOiJjbGhuczR6Y20xcDZwM2VudWh0M3hwOHg1In0.XjIfoHbX2IiyiyJsbw1euw";  // Replace with your Mapbox access token
+
+        // Append the place and access token to the API URL
+        url += place + ".json?access_token=" + accessToken;
+
+        // Create a buffer to store the response
+        string buffer;
+
+        // Set the options for libcurl
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+
+        // Perform the request
+        CURLcode res = curl_easy_perform(curl);
+
+        if (res == CURLE_OK) {
+            // Parse the JSON response
+            json response = json::parse(buffer);
+
+            // Retrieve the latitude
+            double latitude = response["features"][0]["center"][1];
+            return latitude;
+        } else {
+            cout << "Failed to perform request for latitude: " << curl_easy_strerror(res) << endl;
+            return 1;
+        }
+
+        // Clean up
+        curl_easy_cleanup(curl);
+    } else {
+        cout << "Failed to initialize libcurl" << endl;
+        return 2;
+    }
+}
