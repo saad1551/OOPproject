@@ -66,3 +66,45 @@ string SelectCountry(vector<string> Countries)
     countrychoice = Countries[choice-1];
     return countrychoice;
 }
+
+vector<Destination> SelectDestinations(vector<City> citiesToVisit)
+{
+    UIManager Displayer;
+    APIManager Retriever;
+    vector <string> destinations;
+    vector <Destination> destinationsToVisit;
+    for (int i = 0; i < citiesToVisit.size(); i++)
+    {
+        destinations = Retriever.getDestinationsByCity(citiesToVisit[i].get_name());
+        vector<int> dest_choices;
+        cout << "Choose the desinations you want to visit in " << citiesToVisit[i].get_name() << ". Press " << destinations.size() + 1 << " to stop.\n";
+        int choice;
+        while(1)
+        {
+            Displayer.show_list(destinations);
+            cin >> choice;
+            if (choice <= 0 || choice > destinations.size() + 1)
+            {
+                cout << "Invalid Choice. Try again\n";
+            }
+            else if (choice == destinations.size() + 1)
+            {
+                break;
+            }
+            dest_choices.push_back(choice-1);
+        }
+
+        for (int j = 0; j < dest_choices.size(); j++)
+        {
+            double latitude = Retriever.get_latitude(destinations[dest_choices[j]]);
+            double longitude = Retriever.get_longitude(destinations[dest_choices[j]]);
+            double avgspend;
+            cout << "Enter the average amount of money expected to be spent at " << destinations[j] << ": ";
+            cin >> avgspend;
+            Destination D (destinations[dest_choices[j]], latitude, longitude, avgspend);
+            citiesToVisit[i].AddDestination(D);
+            destinationsToVisit.push_back(D);
+        }
+    }
+
+}

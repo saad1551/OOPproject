@@ -20,6 +20,7 @@ int main()
     string CountryCode = Retriever.getCountryCode(CountryToBeVisited);
     vector<City> Cities = Retriever.getCitiesByCountry(CountryCode);
     vector<City> CitiesToBeVisited = SelectCities(Cities);
+    vector<Destination> DestinationsToBeVisited = SelectDestinations(CitiesToBeVisited);
 
     return 0;
 }

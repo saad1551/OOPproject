@@ -36,15 +36,25 @@ private:
     //string wiki_summary_;
 };
 
+class Destination: public Location
+{
+public: 
+    Destination(string name, double latitude, double longitude, double avgspend);
+    double get_avgspend();
+private:
+    double avgspend;
+};
 
 class City: public Location
 {
     friend class UIManager;
 public:
     City(string name, double latitude, double longitude, double population); 
-    double get_population(); 
+    double get_population();
+    void AddDestination(Destination); 
 private:
     double population;
+    vector<Destination> DestinationsToBeVisited;
 };
 
 
@@ -67,7 +77,10 @@ class APIManager {
 public:
     vector<string> get_countries_list();
     vector<City> getCitiesByCountry(const string& country);
-    string APIManager::getCountryCode(const string& countryName);
+    string getCountryCode(const string& countryName);
+    vector <string> getDestinationsByCity(const string& cityname);
+    double get_latitude(const string& place_name);
+    double get_longitude(const string& place_name);
     string get_location_info(const Location& location) const;
     json get_directions(const Location& start, const vector<Location>& destinations) const;
     string get_weather(const Location& location, const tm& date) const;

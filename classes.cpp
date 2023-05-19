@@ -159,3 +159,13 @@ int UIManager::show_list(vector<City> cities)
     cin >> choice;
     return choice-1;
 }
+
+vector<string> APIManager::getDestinationsByCity(const string& cityname)
+{
+
+}
+
+void City::AddDestination(Destination d)
+{
+    DestinationsToBeVisited.push_back(d);
+}
