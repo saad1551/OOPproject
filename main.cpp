@@ -14,13 +14,16 @@ int main()
 {
     cout << "Welcome to the travel itinerary planner.\nSelect a country you want to visit:\n" << endl;
 
-    APIManager Retriever;
-    vector<string> Countries = Retriever.get_countries_list();
-    string CountryToBeVisited = SelectCountry(Countries);
-    string CountryCode = Retriever.getCountryCode(CountryToBeVisited);
-    vector<City> Cities = Retriever.getCitiesByCountry(CountryCode);
-    vector<City> CitiesToBeVisited = SelectCities(Cities);
-    vector<Destination> DestinationsToBeVisited = SelectDestinations(CitiesToBeVisited);
+    APIManager Retriever; //an object that handles API calls
+    vector<string> Countries = Retriever.get_countries_list(); //get the names of all countries of the world
+    string CountryToBeVisited = SelectCountry(Countries); // name of the country that is to be visited
+    string CountryCode = Retriever.getCountryCode(CountryToBeVisited); //code of the country that is to be visited
+    vector<City> Cities = Retriever.getCitiesByCountry(CountryCode); //objects of all the cities of that country
+    vector<City> CitiesToBeVisited = SelectCities(Cities); //objects of the specific cities that are to be visited
+    vector<Attraction> AttractionsToBeVisited = SelectAttractions(CitiesToBeVisited); //objects of all the attractions that are to be visited
+    City currentCity = FindCurrentCity(); //object of the current city of the user
+    Itinerary TravelItinerary = CreateItinerary(currentCity, CitiesToBeVisited);
+
 
     return 0;
 }

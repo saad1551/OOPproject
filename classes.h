@@ -15,8 +15,12 @@ using json = nlohmann::json;
 
 class Location {
 public:
+    Location();
     Location(string name, double latitude, double longitude);
     void set_description(string description);
+    void SetName(const string& name);
+    void SetLatitude(double latitude);
+    void SetLongitude(double longitude);
     //void set_image_url(string image_url);
     //void set_wiki_summary(string wiki_summary);
 
@@ -36,10 +40,15 @@ private:
     //string wiki_summary_;
 };
 
-class Destination: public Location
+class Country: public Location
+{
+
+};
+
+class Attraction: public Location
 {
 public: 
-    Destination(string name, double latitude, double longitude, double avgspend);
+    Attraction(string name, double latitude, double longitude, double avgspend);
     double get_avgspend();
 private:
     double avgspend;
@@ -49,12 +58,15 @@ class City: public Location
 {
     friend class UIManager;
 public:
-    City(string name, double latitude, double longitude, double population); 
+    City();
+    City(string name, double latitude, double longitude, double population, string countryName); 
     double get_population();
-    void AddDestination(Destination); 
+    void SetPopulation(int population);
+    void AddAttraction(Attraction); 
 private:
+    string country_name;
     double population;
-    vector<Destination> DestinationsToBeVisited;
+    vector<Attraction> AttractionsToBeVisited;
 };
 
 
@@ -78,11 +90,12 @@ public:
     vector<string> get_countries_list();
     vector<City> getCitiesByCountry(const string& country);
     string getCountryCode(const string& countryName);
-    vector <string> getDestinationsByCity(const string& cityname);
+    vector <string> getAttractionsByCity(const string& cityname);
     double get_latitude(const string& place_name);
     double get_longitude(const string& place_name);
+    City get_city(string const& cityname);
     string get_location_info(const Location& location) const;
-    json get_directions(const Location& start, const vector<Location>& destinations) const;
+    json get_directions(const Location& start, const vector<Location>& Attractions) const;
     string get_weather(const Location& location, const tm& date) const;
 };
 
@@ -91,11 +104,32 @@ public:
     int show_list(vector<City>);
     int show_list(vector<string>);
     int show_cities_list;
-    void ShowCityDetails(City C);
+    void ShowLocationDetails(City C);
+    void ShowLocationDetails(Attraction A);
     Location get_location_input() const;
     tm get_date_input() const;
     double get_budget_input() const;
     void display_itinerary(const Itinerary& itinerary) const;
+};
+
+
+class ItineraryPlanner
+{
+public:
+    ItineraryPlanner(City sourceCity, vector<City> destinationCities);
+private:
+    City sourceCity;
+    vector<City> destinationCities;
+};
+
+class TravelDay
+{
+public:     
+    TravelDay();
+    TravelDay(vector<Attraction>, vector<City>);
+private:
+    vector<Attraction>AttractionsToVisit;
+    vector<City>CitiesToVisit;
 };
 
 #endif
