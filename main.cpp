@@ -22,8 +22,8 @@ int main()
     vector<City> CitiesToBeVisited = SelectCities(Cities); //objects of the specific cities that are to be visited
     vector<Attraction> AttractionsToBeVisited = SelectAttractions(CitiesToBeVisited); //objects of all the attractions that are to be visited
     City currentCity = FindCurrentCity(); //object of the current city of the user
-    Itinerary TravelItinerary = CreateItinerary(currentCity, CitiesToBeVisited);
-
+    int travelDays = GetTravelDays();
+    Itinerary TravelItinerary = CreateItinerary(currentCity, CitiesToBeVisited, travelDays);
 
     return 0;
 }

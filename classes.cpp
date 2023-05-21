@@ -387,3 +387,84 @@ City APIManager::get_city(string const& cityname)
     return C;
 }
 
+string City::get_country_name()
+{
+    return country_name;
+}
+
+double City::get_population()
+{
+    return population;
+}
+
+double Location::get_latitude()
+{
+    return latitude_;
+}
+
+double Location::get_longitude()
+{
+    return longitude_
+}
+
+ItineraryPlanner::ItineraryPlanner(City sourceCity, vector<City> destinationCities, int travelDays)
+{
+    this->sourceCity = sourceCity;
+    this->destinationCities = destinationCities;
+    this->travelDays = travelDays;
+}
+
+void Itinerary::AddTravelDay(TravelDay travelDay)
+{
+    TravelDays.push_back(travelDay);
+}
+
+vector<City> Sorter::SortByOrderOfTravel(City sourceCity, vector<City> destinationCities)
+{
+    vector<double> distanceFromSourceCity;
+    APIManager Retriever;
+    for (int i = 0; i < destinationCities.size(); i++)
+    {
+        //distanceFromSourceCity.push_back(Retriever.get_distance(sourceCity.get_latitude(), sourceCity.get_longitude(), destinationCities[i].get_latitude(), destinationCities[i].get_longitude())
+    }
+    vector<City> SortedCities = SortByDistance(sourceCity, distanceFromSourceCity, destinationCities);
+}
+
+vector<Attraction> SortByOrderOfTravel(vector<City> orderedCities)
+{
+    vector<Attraction> orderedAttractions;
+    for (int i = 0; i < orderedCities.size(); i++)
+    {
+        Attraction sourceAttraction = orderedCities[i].get_attractions_to_be_visited()[0];
+        
+    }
+};
+
+Itinerary ItineraryPlanner::PlanIntraCountry(City sourceCity, vector<City> destinationCities, int travelDays)
+{
+    Itinerary itinerary;
+    TravelDay travelday;
+    int travellinghours = GetTravellingHours(travelDays);
+    Sorter sorter;
+    vector<City> OrderedCities = sorter.SortByOrderOfTravel(sourceCity, destinationCities);
+    vector<Attraction> OrderedAttractions = sorter.SortByOrderOfTravel()
+    itinerary.AddTravelDay(travelday);
+}
+
+vector<Attraction> City::get_attractions_to_be_visited() const
+{
+    return AttractionsToBeVisited;
+}
+
+Attraction::Attraction(const Attraction& other) : Location(other.get_name(), other.get_latitude(), other.get_longitude()), avgspend(other.avgspend)
+{
+
+};
+
+City::City(const City& other) : Location(other.get_name(), other.get_latitude(), other.get_longitude()), country_name(other.country_name), population(other.population)
+{
+    for (int i = 0; i < other.get_attractions_to_be_visited.size(); i++)
+    {
+        AttractionsToBeVisited.push_back(Attraction(other.get_attractions_to_be_visited[i].get_name(), other.get_attractions_to_be_visited[i].get_latitude(), other.get_attractions_to_be_visited[i].get_longitude(), other.get_attractions_to_be_visited[i].get_avgspend()));
+    }
+}

@@ -49,6 +49,7 @@ class Attraction: public Location
 {
 public: 
     Attraction(string name, double latitude, double longitude, double avgspend);
+    Attraction(const Attraction& other);
     double get_avgspend();
 private:
     double avgspend;
@@ -60,9 +61,13 @@ class City: public Location
 public:
     City();
     City(string name, double latitude, double longitude, double population, string countryName); 
+    City(const City& other);
+
     double get_population();
     void SetPopulation(int population);
     void AddAttraction(Attraction); 
+    string get_country_name();
+    vector<Attraction> get_attractions_to_be_visited();
 private:
     string country_name;
     double population;
@@ -70,8 +75,21 @@ private:
 };
 
 
+class TravelDay
+{
+    friend class ItineraryPlanner;
+public:     
+    TravelDay();
+    TravelDay(vector<Attraction>, vector<City>);
+private:
+    vector<Attraction>AttractionsToVisit;
+    vector<City>CitiesToVisit;
+};
+
 class Itinerary {
+    friend class ItineraryPlanner;
 public:
+    void AddTravelDay(TravelDay travelDay);
     void add_location(const Location& location);
     void remove_location(int index);
     double get_total_distance() const;
@@ -79,6 +97,7 @@ public:
     double get_total_cost() const;
 
 private:
+    vector<TravelDay> TravelDays;
     vector<Location> locations_;
     tm start_date_;
     tm end_date_;
@@ -116,20 +135,22 @@ public:
 class ItineraryPlanner
 {
 public:
-    ItineraryPlanner(City sourceCity, vector<City> destinationCities);
+    ItineraryPlanner(City sourceCity, vector<City> destinationCities, int travelDays);
+    Itinerary PlanInterCountry(City sourceCity, vector<City> destinationCities, int travelDays);
+    Itinerary PlanIntraCountry(City sourceCity, vector<City> destinationCities, int travelDays);
 private:
     City sourceCity;
     vector<City> destinationCities;
+    int travelDays;
 };
 
-class TravelDay
+class Sorter
 {
-public:     
-    TravelDay();
-    TravelDay(vector<Attraction>, vector<City>);
-private:
-    vector<Attraction>AttractionsToVisit;
-    vector<City>CitiesToVisit;
+public:
+    vector<City> SortByOrderOfTravel(City, vector<City>);
+    vector<Attraction> SortByOrderOfTravel(vector<City>);
 };
+
+
 
 #endif

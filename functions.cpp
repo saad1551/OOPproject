@@ -119,7 +119,122 @@ City FindCurrentCity(void)
     return currentCity;
 }
 
-Itinerary CreateItinerary(City sourceCity, vector<City> destinationCities)
+int GetTravelDays()
 {
-    Itinerary itinerary(sourceCity, destinationCities);
+    int travelDays;
+    while(1)
+    {
+        cout << "How many Days do you want to travel ? ";
+        cin >> travelDays;
+        if (travelDays <= 0)
+        {
+            cout << "Invalid Input";
+            continue;
+        }
+        else 
+        {
+            break;
+        }
+    }
+    return travelDays;
+}
+
+int GetTravellingHours(int TravelDays)
+{
+    int travelHours;
+    int flag =  1;
+    while(flag)
+    {
+        cout << "How many hours per day do you want to spend in commuting ? ";
+        cin >> travelHours;
+        if (travelHours < 3)
+        {
+            char c;
+            while (c != 'y' && c != 'n')
+            {
+                cout << travelHours << " hours are too less. Do you want to change it? (y/n)";
+                cin >> c;
+                if (toupper(c) == 'Y')
+                {
+                    break;
+                }
+                else if (toupper(c) == 'N')
+                {
+                    flag = 0;
+                    break;
+                }
+            }
+            continue;
+        }
+        else if (travelHours > 14)
+        {
+            char c;
+            while (c != 'y' && c != 'n')
+            {
+                cout << travelHours << " hours are too much. Do you want to change it? (y/n)";
+                cin >> c;
+                if (toupper(c) == 'Y')
+                {
+                    break;
+                }
+                else if (toupper(c) == 'N')
+                {
+                    flag = 0;
+                    break;
+                }
+            }
+            continue;
+        }
+        else 
+        {
+            break;
+        }
+    }
+    return travelHours;
+}
+
+vector<City> SortByDistance(City sourceCity, vector<double> distanceFromSourceCity, vector<City> destinationCities)
+{
+    double min = distanceFromSourceCity[0];
+    APIManager Retriever;
+    if (destinationCities.size() == 1)
+    {
+        return destinationCities;
+    }
+    else
+    {
+        for (int i = 1; i < destinationCities.size(); i++)
+        {
+            if (distanceFromSourceCity[i] < min)
+            {
+                min = distanceFromSourceCity[i];
+                City tempCity (destinationCities[0]);
+                destinationCities[0] = destinationCities[i];
+                destinationCities[i] = tempCity;
+                distanceFromSourceCity.clear();
+                sourceCity = destinationCities[0];
+                for (int j = 1; j < destinationCities.size(); j++)
+                {
+                    distanceFromSourceCity.push_back(Retriever.get_distance(sourceCity.get_latitude(), sourceCity.get_longitude(), destinationCities[j].get_latitude(), destinationCities[j].get_longitude()));
+                }
+            }
+        }
+        return (SortByDistance(sourceCity, distanceFromSourceCity, vector<City>(destinationCities.begin()+1, destinationCities.end())));
+    }
+    
+
+}
+
+Itinerary CreateItinerary(City sourceCity, vector<City> destinationCities, int travelDays)
+{
+    Itinerary itinerary;
+    ItineraryPlanner PlanCreator(sourceCity, destinationCities, travelDays);
+    if (sourceCity.get_country_name().compare(destinationCities[0].get_country_name()) == 0)
+    {
+        //itinerary = PlanCreator.PlanIntraCountry();
+    }
+    else
+    {
+        //itinerary = PlanCreator.PlanInterCountry();
+    }
 }
