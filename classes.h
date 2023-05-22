@@ -1,5 +1,5 @@
-#ifndef CLASSESH
-#define CLASSESH
+#ifndef APIHEADER_H
+#define APIHEADER_H
 
 #include <iostream>
 #include <string>
@@ -85,16 +85,31 @@ private:
     struct t Time;
 public:
     Eat(int hours, int minutes);
+    Eat();
     virtual void PrintAction() = 0;
     void GetTime();
-    int GetHours();
-    int GetMinutes();
+    int GetHours() const;
+    int GetMinutes() const;
+    void SetTime(int , int);
+};
+
+class Travel : public Action
+{
+private:
+    string origin;
+    string destination;
+    struct t dep_time;
+    struct t arr_time;
+public:
+    Travel(string, string, int, int, int, int);
+    void PrintAction();
 };
 
 class Breakfast : public Eat
 {
 public:
     Breakfast(int, int);
+    Breakfast();
     Breakfast(const Breakfast &other);
     void PrintAction();
 };
@@ -105,6 +120,7 @@ public:
     Lunch(int, int);
     Lunch(const Lunch& other);
     void PrintAction();
+    Lunch();
 };
 
 class Dinner: public Eat
@@ -112,6 +128,7 @@ class Dinner: public Eat
 public:
     Dinner(int, int);
     Dinner();
+    Dinner(const Dinner& other);
     void PrintAction();
 };
 
@@ -123,9 +140,9 @@ private:
     Lunch lunch;
     Dinner dinner;
 public:
-    void AddBreakFast(Breakfast& b);
-    void AddLunch(Lunch& l);
-    void AddDinner(Dinner& d);
+    void AddBreakFast(const Breakfast& b);
+    void AddLunch(const Lunch& l);
+    void AddDinner(const Dinner& d);
     TravelDay();
 };
 
@@ -156,9 +173,7 @@ public:
     double get_latitude(const string& place_name);
     double get_longitude(const string& place_name);
     City get_city(string const& cityname);
-    string get_location_info(const Location& location) const;
-    json get_directions(const Location& start, const vector<Location>& Attractions) const;
-    string get_weather(const Location& location, const tm& date) const;
+    double get_travelling_time(double lat1, double long1, double lat2, double long2);
 };
 
 class UIManager {
@@ -180,7 +195,7 @@ class ItineraryPlanner
 public:
     ItineraryPlanner(City sourceCity, vector<City> destinationCities, int travelDays);
     Itinerary PlanInterCountry(City sourceCity, vector<City> destinationCities, int travelDays);
-    Itinerary PlanIntraCountry(City sourceCity, vector<City> destinationCities, int travelDays);
+    Itinerary PlanIntraCountry(City sourceCity, vector<City> destinationCities);
 private:
     City sourceCity;
     vector<City> destinationCities;
@@ -191,54 +206,7 @@ class Sorter
 {
 public:
     vector<City> SortByOrderOfTravel(City, vector<City>);
-    vector<Attraction> Sorter::SortByOrderOfTravel(vector<Attraction>);
+    vector<Attraction>SortByOrderOfTravel(vector<Attraction>);
 };
 
-class Action
-{
-public:
-    virtual void PrintAction() = 0;
-};
-
-class Eat: public Action
-{
-private:
-    struct t Time;
-public:
-    Eat(int, int);
-    Eat();
-    virtual void PrintAction() = 0;
-    void GetTime();
-    int GetHours();
-};
-
-class Breakfast : public Eat
-{
-public:
-    Breakfast(int, int);
-    void PrintAction();
-    Breakfast();
-};
-
-class Lunch : public Eat
-{
-public:
-    Lunch(int, int);
-    void PrintAction();
-    Lunch();
-};
-
-class Dinner: public Eat
-{
-public:
-    Dinner(int, int);
-    void PrintAction();
-    Dinner();
-};
-
-
-
-
-
-
-#endif
+#endif // APIHEADER_H

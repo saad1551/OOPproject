@@ -1,21 +1,16 @@
-#include <functions.h>
-#include <classes.h>
-#include <string>
-#include <iostream>
-
-#define TRAVELLING_HOURS_PER_DAY 7;
-#define HOURS_PER_ATTRACTION 2;
-#define BREAKFAST_TIME 7;
-#define LUNCH_TIME 1;
-#define DINNER_TIME 8;
+#define TRAVELLING_HOURS_PER_DAY 7
+#define HOURS_PER_ATTRACTION 2
+#define BREAKFAST_TIME 7
+#define LUNCH_TIME 1
+#define DINNER_TIME 8
 
 using namespace std;
 
 vector<string> APIManager::get_countries_list()
 {
     string url = "https://restcountries.com/v2/all";
-    
-    
+
+
     CURL* curl = curl_easy_init();
     vector<string> country_names;
     if (curl) {
@@ -25,7 +20,7 @@ vector<string> APIManager::get_countries_list()
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
         CURLcode res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
-        
+
 
         if (res == CURLE_OK) {
             json j = json::parse(response);
@@ -35,7 +30,7 @@ vector<string> APIManager::get_countries_list()
             }
             //for (int i = 1; i <= country_names.size(); i++)
             //{
-             //   cout << "i: " << country_names[i];
+            //   cout << "i: " << country_names[i];
             //}
         }
         else {
@@ -46,7 +41,7 @@ vector<string> APIManager::get_countries_list()
 }
 
 
-Location::Location(string name, double latitude, double longitude) 
+Location::Location(string name, double latitude, double longitude)
 {
     name_ = name;
     latitude_ = latitude;
@@ -62,10 +57,10 @@ vector<City> APIManager::getCitiesByCountry(const string& country) {
 
     // Create the request URL
     string url = "http://api.geonames.org/searchJSON?"
-                      "country=" + country +
-                      "&maxRows=1000"  // Maximum number of rows to retrieve
-                      "&featureClass=P"  // Only retrieve populated places
-                      "&username=" + username;
+                 "country=" + country +
+                 "&maxRows=1000"  // Maximum number of rows to retrieve
+                 "&featureClass=P"  // Only retrieve populated places
+                 "&username=" + username;
 
     // Initialize libcurl
     curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -156,7 +151,7 @@ City::City(string name, double latitude, double longitude, double population, st
     this->country_name = countryName;
 }
 
-Location::Location() 
+Location::Location()
 {
     name_ = "";
     latitude_ = 0.0;
@@ -242,6 +237,8 @@ vector<string> APIManager::getAttractionsByCity(const string& cityname)
 
     // Cleanup libcurl
     curl_global_cleanup();
+
+    return attractions;
 }
 
 void City::AddAttraction(const Attraction& d)
@@ -251,6 +248,7 @@ void City::AddAttraction(const Attraction& d)
 
 double APIManager::get_latitude(const string& place_name)
 {
+    double latitude = 0;
     CURL* curl = curl_easy_init();
     if (curl) {
         // Set the Mapbox Geocoding API endpoint
@@ -277,8 +275,7 @@ double APIManager::get_latitude(const string& place_name)
             json response = json::parse(buffer);
 
             // Retrieve the latitude
-            double latitude = response["features"][0]["center"][1];
-            return latitude;
+            latitude = response["features"][0]["center"][1];
         } else {
             cout << "Failed to perform request for latitude: " << curl_easy_strerror(res) << endl;
             return 1;
@@ -290,17 +287,19 @@ double APIManager::get_latitude(const string& place_name)
         cout << "Failed to initialize libcurl" << endl;
         return 2;
     }
+     return latitude;
 }
 
-string Location::get_name() const 
+string Location::get_name() const
 {
     return name_;
 }
 
 double APIManager::get_longitude(const string& place_name)
 {
-     curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     CURL* curl = curl_easy_init();
+    double longitude = 0;
 
     if (curl) {
         // Set the URL for the API request
@@ -326,8 +325,7 @@ double APIManager::get_longitude(const string& place_name)
             json response = json::parse(response_string);
 
             // Retrieve the longitude from the response
-            double longitude = response["features"][0]["center"][0];
-            return longitude;
+            longitude = response["features"][0]["center"][0];
         } else {
             // Error occurred during the request
             cerr << "Request failed: " << curl_easy_strerror(res) << endl;
@@ -339,6 +337,8 @@ double APIManager::get_longitude(const string& place_name)
 
     // Clean up libcurl global state
     curl_global_cleanup();
+
+    return longitude;
 
 }
 
@@ -413,7 +413,7 @@ City APIManager::get_city(string const& cityname)
     return C;
 }
 
-string City::get_country_name() const 
+string City::get_country_name() const
 {
     return country_name;
 }
@@ -452,9 +452,10 @@ vector<City> Sorter::SortByOrderOfTravel(City sourceCity, vector<City> destinati
     APIManager Retriever;
     for (int i = 0; i < destinationCities.size(); i++)
     {
-        //distanceFromSourceCity.push_back(Retriever.get_distance(sourceCity.get_latitude(), sourceCity.get_longitude(), destinationCities[i].get_latitude(), destinationCities[i].get_longitude())
+        distanceFromSourceCity.push_back(calculateDistance(sourceCity.get_latitude(), sourceCity.get_longitude(), destinationCities[i].get_latitude(), destinationCities[i].get_longitude()));
     }
     vector<City> SortedCities = SortByDistance(sourceCity, distanceFromSourceCity, destinationCities);
+    return SortedCities;
 }
 
 vector<Attraction> Sorter::SortByOrderOfTravel(vector<Attraction> AttractionsToBeVisited)
@@ -472,11 +473,13 @@ vector<Attraction> Sorter::SortByOrderOfTravel(vector<Attraction> AttractionsToB
     return OrderedAttractions;
 }
 
-Itinerary ItineraryPlanner::PlanIntraCountry(City sourceCity, vector<City> destinationCities, int travelDays)
+Itinerary ItineraryPlanner::PlanIntraCountry(City sourceCity, vector<City> destinationCities)
 {
+    APIManager Retriever;
     Itinerary itinerary;
     TravelDay travelday;
-    int travellinghours = GetTravellingHours(travelDays);
+    int travellinghoursperday = TRAVELLING_HOURS_PER_DAY;
+    int traveltime = travellinghoursperday * 60;
     Sorter sorter;
     vector<City> OrderedCities = sorter.SortByOrderOfTravel(sourceCity, destinationCities);
     vector<Attraction> OrderedAttractions;
@@ -486,14 +489,28 @@ Itinerary ItineraryPlanner::PlanIntraCountry(City sourceCity, vector<City> desti
         OrderedAttractions.insert(OrderedAttractions.end(), atts.begin(), atts.end());
     }
 
+    Breakfast breakfast(BREAKFAST_TIME);
+    Lunch lunch(LUNCH_TIME);
+    Dinner dinner(DINNER_TIME);
+
+    vector<int> travelMinutes;
+
+    for (int i = 0; i < OrderedAttractions.size() - 1; i++)
+    {
+        travelMinutes.push_back(Retriever.get_travelling_time(OrderedAttractions[i].get_latitude(), OrderedAttractions[i].get_longitude(), OrderedAttractions[i+1].get_latitude(), OrderedAttractions[i+1].get_longitude()));
+    }
+
+
+
+
     while(OrderedAttractions.size() != 0)
     {
-        
+
     }
 
 
     itinerary.AddTravelDay(travelday);
-}
+}//////////////////////////////////////////////////////
 
 vector<Attraction> City::get_attractions_to_be_visited() const
 {
@@ -501,25 +518,60 @@ vector<Attraction> City::get_attractions_to_be_visited() const
 }
 
 Attraction::Attraction(const Attraction& other) : Location(other.get_name(), other.get_latitude(), other.get_longitude()), avgspend(other.avgspend)
-{
+    {
 
-};
+    };
 
 
-void TravelDay::AddBreakFast(Breakfast& b)
+void TravelDay::AddBreakFast(const Breakfast& b)
 {
     breakfast = b;
 }
 
-void TravelDay::AddLunch(Lunch& l)
+void TravelDay::AddLunch(const Lunch& l)
 {
     lunch = l;
 }
 
-void TravelDay::AddDinner(Dinner& d)
+void TravelDay::AddDinner(const Dinner& d)
 {
     dinner = d;
 }
+
+Travel::Travel(string o, string d, int dt_hrs, int dt_min = 0,  int at_hrs, int at_min = 0)
+{
+    origin = o;
+    destination = d;
+    dep_time.hours = dt_hrs;
+    dep_time.minutes = dt_min;
+    arr_time.hours = at_hrs;
+    arr_time.minutes = at_min;
+}
+
+void Travel::PrintAction()
+{
+    cout << "Departure from " << origin << " at " << dep_time.hours << ":";
+    if (dep_time.minutes < 10)
+    {
+        cout << "0" << dep_time.minutes << endl;
+    }
+    else
+    {
+        cout << dep_time.minutes << endl;
+    }
+    cout << "Arrival at " << destination << " at " << arr_time.hours << ":";
+    if (arr_time.minutes < 10)
+    {
+        cout << "0" << arr_time.minutes << endl;
+    }
+    else
+    {
+        cout << arr_time.minutes << endl;
+    }
+    
+}
+
+
 
 TravelDay::TravelDay()
 {
@@ -534,9 +586,14 @@ City::City(const City& other) : Location(other.get_name(), other.get_latitude(),
 }
 
 
-int Eat::GetHours()
+int Eat::GetHours() const
 {
     return Time.hours;
+}
+
+int Eat::GetMinutes() const
+{
+    return Time.minutes;
 }
 
 
@@ -558,23 +615,44 @@ Eat::Eat()
     Time.minutes = 0;
 }
 
+void Eat::SetTime(int hours, int minutes)
+{
+    Time.hours = hours;
+    Time.minutes = minutes;
+}
+
 Breakfast::Breakfast(int hours, int minutes = 0) : Eat(hours, minutes)
 {
 
 }
 
 
-Breakfast::Breakfast()
+Breakfast::Breakfast() : Eat()
 {
 
 }
 
 Breakfast::Breakfast(const Breakfast &other) : Eat()
 {
+    Eat::SetTime(other.Eat::GetHours(), other.Eat::GetMinutes());
+}
 
+Lunch::Lunch(const Lunch &other) : Eat()
+{
+    Eat::SetTime(other.Eat::GetHours(), other.Eat::GetMinutes());
+}
+
+Dinner::Dinner(const Dinner &other) : Eat()
+{
+    Eat::SetTime(other.Eat::GetHours(), other.Eat::GetMinutes());
 }
 
 Lunch::Lunch(int hours, int minutes = 0) : Eat(hours, minutes)
+{
+
+}
+
+Lunch::Lunch() : Eat()
 {
 
 }
@@ -584,6 +662,10 @@ Dinner::Dinner(int hours, int minutes = 0) : Eat(hours, minutes)
 
 }
 
+Dinner::Dinner()
+{
+
+}
 
 void Breakfast::PrintAction()
 {
