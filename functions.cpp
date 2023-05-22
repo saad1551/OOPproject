@@ -5,6 +5,24 @@
 
 using namespace std;
 
+
+double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    double earthRadius = 6371.0; // Radius of the Earth in kilometers
+
+    // Convert latitude and longitude from degrees to radians
+    double dLat = (lat2 - lat1) * 3.141592653589793 / 180.0;
+    double dLon = (lon2 - lon1) * 3.141592653589793 / 180.0;
+
+    // Apply Haversine formula
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+               cos(lat1 * 3.141592653589793 / 180.0) * cos(lat2 * 3.141592653589793 / 180.0) *
+               sin(dLon / 2) * sin(dLon / 2);
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    double distance = earthRadius * c;
+
+    return distance;
+}
+
 size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
     ((std::string*)userdata)->append(ptr, size * nmemb);
     return size * nmemb;
@@ -195,41 +213,87 @@ int GetTravellingHours(int TravelDays)
 
 vector<City> SortByDistance(City sourceCity, vector<double> distanceFromSourceCity, vector<City> destinationCities)
 {
-    double min = distanceFromSourceCity[0];
-    APIManager Retriever;
-    if (destinationCities.size() == 1)
-    {
+    if (destinationCities.size() == 1) {
         return destinationCities;
-    }
-    else
-    {
-        for (int i = 1; i < destinationCities.size(); i++)
-        {
-            if (distanceFromSourceCity[i] < min)
-            {
+    } else {
+        double min = distanceFromSourceCity[0];
+        int minIndex = 0;
+        for (int i = 0; i < destinationCities.size(); i++) {
+            if (distanceFromSourceCity[i] < min) {
                 min = distanceFromSourceCity[i];
-                City tempCity (destinationCities[0]);
-                destinationCities[0] = destinationCities[i];
-                destinationCities[i] = tempCity;
-                distanceFromSourceCity.clear();
-                sourceCity = destinationCities[0];
-                for (int j = 1; j < destinationCities.size(); j++)
-                {
-                    distanceFromSourceCity.push_back(Retriever.get_distance(sourceCity.get_latitude(), sourceCity.get_longitude(), destinationCities[j].get_latitude(), destinationCities[j].get_longitude()));
-                }
+                minIndex = i;
             }
         }
-        return (SortByDistance(sourceCity, distanceFromSourceCity, vector<City>(destinationCities.begin()+1, destinationCities.end())));
-    }
-    
+        
+        // Swap the city and distance with the minimum distance
+        swap(destinationCities[0], destinationCities[minIndex]);
+        swap(distanceFromSourceCity[0], distanceFromSourceCity[minIndex]);
 
+        // Clear the distances and calculate new distances from the updated source city
+        distanceFromSourceCity.clear();
+        sourceCity = destinationCities[0];
+        for (int j = 1; j < destinationCities.size(); j++) {
+            distanceFromSourceCity.push_back(calculateDistance(
+                sourceCity.get_latitude(), sourceCity.get_longitude(),
+                destinationCities[j].get_latitude(), destinationCities[j].get_longitude()));
+        }
+        
+        // Recursive call to sort the remaining cities
+        vector<City> sortedCities = SortByDistance(sourceCity, distanceFromSourceCity,
+            vector<City>(destinationCities.begin() + 1, destinationCities.end()));
+
+        // Insert the source city at the beginning
+        sortedCities.insert(sortedCities.begin(), sourceCity);
+        
+        return sortedCities;
+    }
 }
 
-Itinerary CreateItinerary(City sourceCity, vector<City> destinationCities, int travelDays)
+vector<Attraction> SortByDistance(Attraction firstVisit, vector<double> distanceFromFirstVisit, vector<Attraction> AttractionsToBeVisited)
+{
+    if (AttractionsToBeVisited.size() == 1) {
+        return AttractionsToBeVisited;
+    } else {
+        double min = distanceFromFirstVisit[0];
+        int minIndex = 0;
+        for (int i = 0; i < AttractionsToBeVisited.size(); i++) {
+            if (distanceFromFirstVisit[i] < min) {
+                min = distanceFromFirstVisit[i];
+                minIndex = i;
+            }
+        }
+        
+        // Swap the city and distance with the minimum distance
+        swap(AttractionsToBeVisited[0], AttractionsToBeVisited[minIndex]);
+        swap(distanceFromFirstVisit[0], distanceFromFirstVisit[minIndex]);
+
+        // Clear the distances and calculate new distances from the updated source city
+        distanceFromFirstVisit.clear();
+        firstVisit = AttractionsToBeVisited[0];
+        for (int j = 1; j < AttractionsToBeVisited.size(); j++) {
+            distanceFromFirstVisit.push_back(calculateDistance(
+                firstVisit.get_latitude(), firstVisit.get_longitude(),
+                AttractionsToBeVisited[j].get_latitude(), AttractionsToBeVisited[j].get_longitude()));
+        }
+        
+        // Recursive call to sort the remaining cities
+        vector<Attraction> sortedCities = SortByDistance(firstVisit, distanceFromFirstVisit,
+            vector<Attraction>(AttractionsToBeVisited.begin() + 1, AttractionsToBeVisited.end()));
+
+        // Insert the source Attraction at the beginning
+        sortedCities.insert(sortedCities.begin(), firstVisit);
+        
+        return sortedCities;
+    }
+}
+
+
+
+Itinerary CreateItinerary(City sourceCity, vector<City> AttractionsToBeVisited, int travelDays)
 {
     Itinerary itinerary;
-    ItineraryPlanner PlanCreator(sourceCity, destinationCities, travelDays);
-    if (sourceCity.get_country_name().compare(destinationCities[0].get_country_name()) == 0)
+    ItineraryPlanner PlanCreator(sourceCity, AttractionsToBeVisited, travelDays);
+    if (sourceCity.get_country_name().compare(AttractionsToBeVisited[0].get_country_name()) == 0)
     {
         //itinerary = PlanCreator.PlanIntraCountry();
     }

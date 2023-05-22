@@ -6,12 +6,17 @@
 #include <vector>
 #include <ctime>
 #include <curl/curl.h>
+//#include <structures.h>
 #include <nlohmann/json.hpp>
 
 using namespace std;
 using json = nlohmann::json;
 
-
+struct t
+{
+    int hours;
+    int minutes;
+};
 
 class Location {
 public:
@@ -21,23 +26,15 @@ public:
     void SetName(const string& name);
     void SetLatitude(double latitude);
     void SetLongitude(double longitude);
-    //void set_image_url(string image_url);
-    //void set_wiki_summary(string wiki_summary);
 
     string get_name() const;
     double get_latitude() const;
     double get_longitude() const;
-    //string get_description() const;
-    //string get_image_url() const;
-    //string get_wiki_summary() const;
 
 private:
     string name_;
     double latitude_;
     double longitude_;
-    //string description_;
-    //string image_url_;
-    //string wiki_summary_;
 };
 
 class Country: public Location
@@ -45,45 +42,91 @@ class Country: public Location
 
 };
 
-class Attraction: public Location
-{
-public: 
+class Attraction : public Location {
+public:
     Attraction(string name, double latitude, double longitude, double avgspend);
     Attraction(const Attraction& other);
     double get_avgspend();
+
 private:
     double avgspend;
 };
 
-class City: public Location
-{
+class City : public Location {
     friend class UIManager;
+
 public:
     City();
-    City(string name, double latitude, double longitude, double population, string countryName); 
+    City(string name, double latitude, double longitude, double population, string countryName);
     City(const City& other);
 
-    double get_population();
+    double get_population() const;
     void SetPopulation(int population);
-    void AddAttraction(Attraction); 
-    string get_country_name();
-    vector<Attraction> get_attractions_to_be_visited();
+    void AddAttraction(const Attraction& attraction);
+    string get_country_name() const;
+    vector<Attraction> get_attractions_to_be_visited() const;
+
 private:
     string country_name;
     double population;
     vector<Attraction> AttractionsToBeVisited;
 };
 
+class Action
+{
+public:
+    virtual void PrintAction() = 0;
+    Action();
+};
+
+class Eat: public Action
+{
+private:
+    struct t Time;
+public:
+    Eat(int hours, int minutes);
+    virtual void PrintAction() = 0;
+    void GetTime();
+    int GetHours();
+    int GetMinutes();
+};
+
+class Breakfast : public Eat
+{
+public:
+    Breakfast(int, int);
+    Breakfast(const Breakfast &other);
+    void PrintAction();
+};
+
+class Lunch : public Eat
+{
+public:
+    Lunch(int, int);
+    Lunch(const Lunch& other);
+    void PrintAction();
+};
+
+class Dinner: public Eat
+{
+public:
+    Dinner(int, int);
+    Dinner();
+    void PrintAction();
+};
+
 
 class TravelDay
 {
-    friend class ItineraryPlanner;
-public:     
-    TravelDay();
-    TravelDay(vector<Attraction>, vector<City>);
 private:
-    vector<Attraction>AttractionsToVisit;
-    vector<City>CitiesToVisit;
+    Breakfast breakfast;
+    Lunch lunch;
+    Dinner dinner;
+public:
+    void AddBreakFast(Breakfast& b);
+    void AddLunch(Lunch& l);
+    void AddDinner(Dinner& d);
+    TravelDay();
 };
 
 class Itinerary {
@@ -148,8 +191,53 @@ class Sorter
 {
 public:
     vector<City> SortByOrderOfTravel(City, vector<City>);
-    vector<Attraction> SortByOrderOfTravel(vector<City>);
+    vector<Attraction> Sorter::SortByOrderOfTravel(vector<Attraction>);
 };
+
+class Action
+{
+public:
+    virtual void PrintAction() = 0;
+};
+
+class Eat: public Action
+{
+private:
+    struct t Time;
+public:
+    Eat(int, int);
+    Eat();
+    virtual void PrintAction() = 0;
+    void GetTime();
+    int GetHours();
+};
+
+class Breakfast : public Eat
+{
+public:
+    Breakfast(int, int);
+    void PrintAction();
+    Breakfast();
+};
+
+class Lunch : public Eat
+{
+public:
+    Lunch(int, int);
+    void PrintAction();
+    Lunch();
+};
+
+class Dinner: public Eat
+{
+public:
+    Dinner(int, int);
+    void PrintAction();
+    Dinner();
+};
+
+
+
 
 
 

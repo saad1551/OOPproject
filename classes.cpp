@@ -3,6 +3,12 @@
 #include <string>
 #include <iostream>
 
+#define TRAVELLING_HOURS_PER_DAY 7;
+#define HOURS_PER_ATTRACTION 2;
+#define BREAKFAST_TIME 7;
+#define LUNCH_TIME 1;
+#define DINNER_TIME 8;
+
 using namespace std;
 
 vector<string> APIManager::get_countries_list()
@@ -37,6 +43,14 @@ vector<string> APIManager::get_countries_list()
         }
     }
     return country_names;
+}
+
+
+Location::Location(string name, double latitude, double longitude) 
+{
+    name_ = name;
+    latitude_ = latitude;
+    longitude_ = longitude;
 }
 
 // Function to retrieve cities for a given country using the Geonames API
@@ -142,6 +156,13 @@ City::City(string name, double latitude, double longitude, double population, st
     this->country_name = countryName;
 }
 
+Location::Location() 
+{
+    name_ = "";
+    latitude_ = 0.0;
+    longitude_ = 0.0;
+}
+
 void UIManager::ShowLocationDetails(City C)
 {
     cout << "Name: " << C.Location::get_name() << endl;
@@ -223,7 +244,7 @@ vector<string> APIManager::getAttractionsByCity(const string& cityname)
     curl_global_cleanup();
 }
 
-void City::AddAttraction(Attraction d)
+void City::AddAttraction(const Attraction& d)
 {
     AttractionsToBeVisited.push_back(d);
 }
@@ -269,6 +290,11 @@ double APIManager::get_latitude(const string& place_name)
         cout << "Failed to initialize libcurl" << endl;
         return 2;
     }
+}
+
+string Location::get_name() const 
+{
+    return name_;
 }
 
 double APIManager::get_longitude(const string& place_name)
@@ -387,24 +413,25 @@ City APIManager::get_city(string const& cityname)
     return C;
 }
 
-string City::get_country_name()
+string City::get_country_name() const 
 {
     return country_name;
 }
 
-double City::get_population()
+double City::get_population() const
 {
     return population;
 }
 
-double Location::get_latitude()
+
+double Location::get_latitude() const
 {
     return latitude_;
 }
 
-double Location::get_longitude()
+double Location::get_longitude() const
 {
-    return longitude_
+    return longitude_;
 }
 
 ItineraryPlanner::ItineraryPlanner(City sourceCity, vector<City> destinationCities, int travelDays)
@@ -430,15 +457,20 @@ vector<City> Sorter::SortByOrderOfTravel(City sourceCity, vector<City> destinati
     vector<City> SortedCities = SortByDistance(sourceCity, distanceFromSourceCity, destinationCities);
 }
 
-vector<Attraction> SortByOrderOfTravel(vector<City> orderedCities)
+vector<Attraction> Sorter::SortByOrderOfTravel(vector<Attraction> AttractionsToBeVisited)
 {
-    vector<Attraction> orderedAttractions;
-    for (int i = 0; i < orderedCities.size(); i++)
+    Attraction firstVisit = AttractionsToBeVisited[0];
+    AttractionsToBeVisited.erase(AttractionsToBeVisited.begin());
+    vector<double> distanceFromFirstVisit;
+    for (int i = 0; i < AttractionsToBeVisited.size(); i++)
     {
-        Attraction sourceAttraction = orderedCities[i].get_attractions_to_be_visited()[0];
-        
+        double distance = calculateDistance(firstVisit.get_latitude(), firstVisit.get_longitude(), AttractionsToBeVisited[i].get_latitude(), AttractionsToBeVisited[i].get_longitude());
+        distanceFromFirstVisit.push_back(distance);
     }
-};
+    vector<Attraction> OrderedAttractions = SortByDistance(firstVisit, distanceFromFirstVisit, AttractionsToBeVisited);
+    OrderedAttractions.insert(OrderedAttractions.begin(), firstVisit);
+    return OrderedAttractions;
+}
 
 Itinerary ItineraryPlanner::PlanIntraCountry(City sourceCity, vector<City> destinationCities, int travelDays)
 {
@@ -447,7 +479,19 @@ Itinerary ItineraryPlanner::PlanIntraCountry(City sourceCity, vector<City> desti
     int travellinghours = GetTravellingHours(travelDays);
     Sorter sorter;
     vector<City> OrderedCities = sorter.SortByOrderOfTravel(sourceCity, destinationCities);
-    vector<Attraction> OrderedAttractions = sorter.SortByOrderOfTravel()
+    vector<Attraction> OrderedAttractions;
+    for (int i = 0; i < OrderedCities.size(); i++)
+    {
+        vector<Attraction> atts = sorter.SortByOrderOfTravel(OrderedCities[i].get_attractions_to_be_visited());
+        OrderedAttractions.insert(OrderedAttractions.end(), atts.begin(), atts.end());
+    }
+
+    while(OrderedAttractions.size() != 0)
+    {
+        
+    }
+
+
     itinerary.AddTravelDay(travelday);
 }
 
@@ -461,10 +505,113 @@ Attraction::Attraction(const Attraction& other) : Location(other.get_name(), oth
 
 };
 
+
+void TravelDay::AddBreakFast(Breakfast& b)
+{
+    breakfast = b;
+}
+
+void TravelDay::AddLunch(Lunch& l)
+{
+    lunch = l;
+}
+
+void TravelDay::AddDinner(Dinner& d)
+{
+    dinner = d;
+}
+
+TravelDay::TravelDay()
+{
+}
+
 City::City(const City& other) : Location(other.get_name(), other.get_latitude(), other.get_longitude()), country_name(other.country_name), population(other.population)
 {
-    for (int i = 0; i < other.get_attractions_to_be_visited.size(); i++)
+    for (int i = 0; i < other.get_attractions_to_be_visited().size(); i++)
     {
-        AttractionsToBeVisited.push_back(Attraction(other.get_attractions_to_be_visited[i].get_name(), other.get_attractions_to_be_visited[i].get_latitude(), other.get_attractions_to_be_visited[i].get_longitude(), other.get_attractions_to_be_visited[i].get_avgspend()));
+        AttractionsToBeVisited.push_back(Attraction(other.get_attractions_to_be_visited()[i].get_name(), other.get_attractions_to_be_visited()[i].get_latitude(), other.get_attractions_to_be_visited()[i].get_longitude(), other.get_attractions_to_be_visited()[i].get_avgspend()));
+    }
+}
+
+
+int Eat::GetHours()
+{
+    return Time.hours;
+}
+
+
+
+Action::Action()
+{
+
+}
+
+Eat::Eat(int hours, int minutes = 0)
+{
+    Time.hours = hours;
+    Time.minutes = minutes;
+}
+
+Eat::Eat()
+{
+    Time.hours = 0;
+    Time.minutes = 0;
+}
+
+Breakfast::Breakfast(int hours, int minutes = 0) : Eat(hours, minutes)
+{
+
+}
+
+
+Breakfast::Breakfast()
+{
+
+}
+
+Breakfast::Breakfast(const Breakfast &other) : Eat()
+{
+
+}
+
+Lunch::Lunch(int hours, int minutes = 0) : Eat(hours, minutes)
+{
+
+}
+
+Dinner::Dinner(int hours, int minutes = 0) : Eat(hours, minutes)
+{
+
+}
+
+
+void Breakfast::PrintAction()
+{
+    cout << "Have breakfast at ";
+    Eat::GetTime();
+}
+
+void Lunch::PrintAction()
+{
+    cout << "Have lunch at ";
+    Eat::GetTime();
+}
+
+void Dinner::PrintAction()
+{
+    cout << "Have dinner at ";
+    Eat::GetTime();
+}
+
+void Eat::GetTime()
+{
+    cout << Time.hours << ":";
+    if (Time.minutes < 10)
+    {
+        cout << "0" << Time.minutes << endl;
+    }
+    else
+    {
+        cout << Time.minutes << endl;
     }
 }
