@@ -1,7 +1,5 @@
-#include <classes.h>
 #include <functions.h>
-#include <iostream>
-#include <string>
+#include <classes.h>
 
 using namespace std;
 
@@ -289,16 +287,17 @@ vector<Attraction> SortByDistance(Attraction firstVisit, vector<double> distance
 
 
 
-Itinerary CreateItinerary(City sourceCity, vector<City> AttractionsToBeVisited, int travelDays)
+Itinerary CreateItinerary(City sourceCity, vector<City> AttractionsToBeVisited)
 {
     Itinerary itinerary;
-    ItineraryPlanner PlanCreator(sourceCity, AttractionsToBeVisited, travelDays);
+    ItineraryPlanner PlanCreator(sourceCity, AttractionsToBeVisited);
     if (sourceCity.get_country_name().compare(AttractionsToBeVisited[0].get_country_name()) == 0)
     {
-        //itinerary = PlanCreator.PlanIntraCountry();
+        itinerary = PlanCreator.PlanIntraCountry(sourceCity, AttractionsToBeVisited);
     }
     else
     {
         //itinerary = PlanCreator.PlanInterCountry();
     }
+    return itinerary;
 }

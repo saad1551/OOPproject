@@ -110,7 +110,7 @@ class Breakfast : public Eat
 public:
     Breakfast(int, int);
     Breakfast();
-    Breakfast(const Breakfast &other);
+    Breakfast(const Breakfast& other);
     void PrintAction();
 };
 
@@ -136,13 +136,10 @@ public:
 class TravelDay
 {
 private:
-    Breakfast breakfast;
-    Lunch lunch;
-    Dinner dinner;
+    vector<Action*>Actions;
 public:
-    void AddBreakFast(const Breakfast& b);
-    void AddLunch(const Lunch& l);
-    void AddDinner(const Dinner& d);
+    void AddAction(Action*);
+    void DisplayDay();
     TravelDay();
 };
 
@@ -150,18 +147,10 @@ class Itinerary {
     friend class ItineraryPlanner;
 public:
     void AddTravelDay(TravelDay travelDay);
-    void add_location(const Location& location);
-    void remove_location(int index);
-    double get_total_distance() const;
-    double get_total_travel_time() const;
-    double get_total_cost() const;
+    void DisplayItinerary();
 
 private:
     vector<TravelDay> TravelDays;
-    vector<Location> locations_;
-    tm start_date_;
-    tm end_date_;
-    double budget_;
 };
 
 class APIManager {
@@ -173,7 +162,7 @@ public:
     double get_latitude(const string& place_name);
     double get_longitude(const string& place_name);
     City get_city(string const& cityname);
-    double get_travelling_time(double lat1, double long1, double lat2, double long2);
+    int get_travelling_time(double, double, double, double);
 };
 
 class UIManager {
@@ -183,17 +172,13 @@ public:
     int show_cities_list;
     void ShowLocationDetails(City C);
     void ShowLocationDetails(Attraction A);
-    Location get_location_input() const;
-    tm get_date_input() const;
-    double get_budget_input() const;
-    void display_itinerary(const Itinerary& itinerary) const;
 };
 
 
 class ItineraryPlanner
 {
 public:
-    ItineraryPlanner(City sourceCity, vector<City> destinationCities, int travelDays);
+    ItineraryPlanner(City sourceCity, vector<City> destinationCities);
     Itinerary PlanInterCountry(City sourceCity, vector<City> destinationCities, int travelDays);
     Itinerary PlanIntraCountry(City sourceCity, vector<City> destinationCities);
 private:

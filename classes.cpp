@@ -1,43 +1,55 @@
+#include <classes.h>
+#include <functions.h>
+
 #define TRAVELLING_HOURS_PER_DAY 7
 #define HOURS_PER_ATTRACTION 2
 #define BREAKFAST_TIME 7
 #define LUNCH_TIME 1
 #define DINNER_TIME 8
+#define TIMESPENT 2
 
 using namespace std;
 
 vector<string> APIManager::get_countries_list()
 {
-    string url = "https://restcountries.com/v2/all";
+    vector<string> countries;
 
+    // Geonames API endpoint
+    string url = "http://api.geonames.org/countryInfoJSON?formatted=true&lang=en&username=saadashraf";
 
+    // Perform the HTTP GET request
     CURL* curl = curl_easy_init();
-    vector<string> country_names;
     if (curl) {
+        // Set the API URL
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+
+        // Set the callback function to receive the response
         string response;
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-        CURLcode res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
 
+        // Perform the request
+        CURLcode result = curl_easy_perform(curl);
+        if (result == CURLE_OK) {
+            // Parse the JSON response
+            json data = json::parse(response);
 
-        if (res == CURLE_OK) {
-            json j = json::parse(response);
-            for (auto& country : j) {
-                string name = country["name"].get<string>();
-                country_names.push_back(name);
+            // Extract the list of countries
+            for (const auto& country : data["geonames"]) {
+                countries.push_back(country["countryName"].get<string>());
+                //cout << country["countryName"].get<string>() << endl;
             }
-            //for (int i = 1; i <= country_names.size(); i++)
-            //{
-            //   cout << "i: " << country_names[i];
-            //}
+        } else {
+            cerr << "Error: " << curl_easy_strerror(result) << endl;
         }
-        else {
-            cerr << "Error: " << curl_easy_strerror(res) << endl;
-        }
+
+        // Cleanup
+        curl_easy_cleanup(curl);
+    } else {
+        cerr << "Error initializing libcurl" << endl;
     }
-    return country_names;
+    //cout << "getcountries function has ended" << endl;
+    return countries;
 }
 
 
@@ -139,7 +151,7 @@ int UIManager::show_list(vector<string> locations)
     int choice;
     for (int i = 0; i < locations.size(); i++)
     {
-        cout << "i + 1: " << locations[i] << endl;
+        cout << i + 1 << ": "  << locations[i] << endl;
     }
     cin >> choice;
     return choice-1;
@@ -171,7 +183,7 @@ int UIManager::show_list(vector<City> cities)
     int choice;
     for (int i = 0; i < cities.size(); i++)
     {
-        cout << "i + 1: " << cities[i].get_name() << endl;
+        cout << "i + 1: " << cities[i].Location::get_name() << endl;
     }
     cin >> choice;
     return choice-1;
@@ -434,11 +446,10 @@ double Location::get_longitude() const
     return longitude_;
 }
 
-ItineraryPlanner::ItineraryPlanner(City sourceCity, vector<City> destinationCities, int travelDays)
+ItineraryPlanner::ItineraryPlanner(City sourceCity, vector<City> destinationCities)
 {
     this->sourceCity = sourceCity;
     this->destinationCities = destinationCities;
-    this->travelDays = travelDays;
 }
 
 void Itinerary::AddTravelDay(TravelDay travelDay)
@@ -452,7 +463,7 @@ vector<City> Sorter::SortByOrderOfTravel(City sourceCity, vector<City> destinati
     APIManager Retriever;
     for (int i = 0; i < destinationCities.size(); i++)
     {
-        distanceFromSourceCity.push_back(calculateDistance(sourceCity.get_latitude(), sourceCity.get_longitude(), destinationCities[i].get_latitude(), destinationCities[i].get_longitude()));
+        distanceFromSourceCity.push_back(calculateDistance(sourceCity.Location::get_latitude(), sourceCity.Location::get_longitude(), destinationCities[i].Location::get_latitude(), destinationCities[i].Location::get_longitude()));
     }
     vector<City> SortedCities = SortByDistance(sourceCity, distanceFromSourceCity, destinationCities);
     return SortedCities;
@@ -465,7 +476,7 @@ vector<Attraction> Sorter::SortByOrderOfTravel(vector<Attraction> AttractionsToB
     vector<double> distanceFromFirstVisit;
     for (int i = 0; i < AttractionsToBeVisited.size(); i++)
     {
-        double distance = calculateDistance(firstVisit.get_latitude(), firstVisit.get_longitude(), AttractionsToBeVisited[i].get_latitude(), AttractionsToBeVisited[i].get_longitude());
+        double distance = calculateDistance(firstVisit.Location::get_latitude(), firstVisit.Location::get_longitude(), AttractionsToBeVisited[i].Location::get_latitude(), AttractionsToBeVisited[i].Location::get_longitude());
         distanceFromFirstVisit.push_back(distance);
     }
     vector<Attraction> OrderedAttractions = SortByDistance(firstVisit, distanceFromFirstVisit, AttractionsToBeVisited);
@@ -477,9 +488,9 @@ Itinerary ItineraryPlanner::PlanIntraCountry(City sourceCity, vector<City> desti
 {
     APIManager Retriever;
     Itinerary itinerary;
-    TravelDay travelday;
+
     int travellinghoursperday = TRAVELLING_HOURS_PER_DAY;
-    int traveltime = travellinghoursperday * 60;
+    int traveltimeperday = travellinghoursperday * 60;
     Sorter sorter;
     vector<City> OrderedCities = sorter.SortByOrderOfTravel(sourceCity, destinationCities);
     vector<Attraction> OrderedAttractions;
@@ -489,56 +500,146 @@ Itinerary ItineraryPlanner::PlanIntraCountry(City sourceCity, vector<City> desti
         OrderedAttractions.insert(OrderedAttractions.end(), atts.begin(), atts.end());
     }
 
-    Breakfast breakfast(BREAKFAST_TIME);
-    Lunch lunch(LUNCH_TIME);
-    Dinner dinner(DINNER_TIME);
-
     vector<int> travelMinutes;
 
     for (int i = 0; i < OrderedAttractions.size() - 1; i++)
     {
-        travelMinutes.push_back(Retriever.get_travelling_time(OrderedAttractions[i].get_latitude(), OrderedAttractions[i].get_longitude(), OrderedAttractions[i+1].get_latitude(), OrderedAttractions[i+1].get_longitude()));
+        travelMinutes.push_back(Retriever.get_travelling_time(OrderedAttractions[i].Location::get_latitude(), OrderedAttractions[i].Location::get_longitude(), OrderedAttractions[i+1].Location::get_latitude(), OrderedAttractions[i+1].Location::get_longitude()));
     }
 
-
-
-
-    while(OrderedAttractions.size() != 0)
+    int ttlMinutes = 0;
+    for (int i = 0; i < travelMinutes.size(); i++)
     {
-
+        ttlMinutes += travelMinutes[i];
     }
 
+    int ttlDays = ttlMinutes / traveltimeperday;
 
-    itinerary.AddTravelDay(travelday);
-}//////////////////////////////////////////////////////
+    int depHrs = 8;
+    int depMin = 0;
+    int Time = Retriever.get_travelling_time(sourceCity.Location::get_latitude(), sourceCity.Location::get_longitude(), OrderedAttractions[0].Location::get_latitude(), OrderedAttractions[0].Location::get_longitude());
+    int arrHrs = depHrs + (Time / 60);
+    int arrMin = depMin + (Time % 60);
+
+    int travelledTime = Time;
+    int remMins = traveltimeperday - Time;
+
+    Action* breakfastAction = new Breakfast(BREAKFAST_TIME, 0);
+    Action* lunchAction = new Lunch(LUNCH_TIME, 0);
+    Action* dinnerAction = new Dinner(DINNER_TIME, 0);
+
+    TravelDay travelday;
+    Action* travel = new Travel(sourceCity.Location::get_name(), OrderedAttractions[0].Location::get_name(), depHrs, depMin, arrHrs, arrMin);
+    travelday.AddAction(travel);
+
+    for (int i = 0; i < ttlDays; i++)
+    {
+        travelday.AddAction(breakfastAction);
+        travelday.AddAction(lunchAction);
+        travelday.AddAction(dinnerAction);
+
+        for (int j = 0; j < OrderedAttractions.size() - 1; j++)
+        {
+            Time = Retriever.get_travelling_time(OrderedAttractions[j].Location::get_latitude(), OrderedAttractions[j].Location::get_longitude(), OrderedAttractions[j+1].Location::get_latitude(), OrderedAttractions[j+1].Location::get_longitude());
+            if (remMins < 40)
+            {
+                depHrs = arrHrs + TIMESPENT;
+                depMin = arrMin;
+                arrHrs = depHrs + (Time / 60);
+                arrMin = depMin + (Time % 60);
+                travel = new Travel(OrderedAttractions[j].Location::get_name(), OrderedAttractions[j+1].Location::get_name(), depHrs, depMin, arrHrs, arrMin);
+                travelday.AddAction(travel);
+                travelledTime += Time;
+                remMins = traveltimeperday - travelledTime;
+            }
+            else
+            {
+                break;
+            }
+        }
+        itinerary.AddTravelDay(travelday);
+    }
+    return itinerary;
+}
 
 vector<Attraction> City::get_attractions_to_be_visited() const
 {
     return AttractionsToBeVisited;
 }
 
-Attraction::Attraction(const Attraction& other) : Location(other.get_name(), other.get_latitude(), other.get_longitude()), avgspend(other.avgspend)
+int APIManager::get_travelling_time(double sourceLat, double sourceLng, double destLat, double destLng)
+{
+    std::string baseUrl = "https://api.mapbox.com/directions/v5/mapbox/driving/";
+    std::string accessToken = "pk.eyJ1Ijoic2FhZGFzaHJhZiIsImEiOiJjbGhuczR6Y20xcDZwM2VudWh0M3hwOHg1In0.XjIfoHbX2IiyiyJsbw1euw"; // Replace with your Mapbox access token
+
+    std::string url = baseUrl + std::to_string(sourceLng) + "," + std::to_string(sourceLat) + ";" + std::to_string(destLng) + "," + std::to_string(destLat) + "?access_token=" + accessToken;
+
+    std::string response;
+    CURL* curl = curl_easy_init();
+
+    if (curl)
+    {
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        CURLcode res = curl_easy_perform(curl);
+
+        if (res != CURLE_OK)
+        {
+            std::cerr << "Failed to perform request: " << curl_easy_strerror(res) << std::endl;
+        }
+
+        curl_easy_cleanup(curl);
+    }
+
+    // Parse the JSON response
+    json j = json::parse(response);
+
+    // Extract the travel time in minutes
+    int travelTime = j["routes"][0]["duration"].get<int>() / 60;
+
+    return travelTime;
+}
+Attraction::Attraction(const Attraction& other) : Location(other.Location::get_name(), other.Location::get_latitude(), other.Location::get_longitude()), avgspend(other.avgspend)
     {
 
     };
 
-
-void TravelDay::AddBreakFast(const Breakfast& b)
+double Attraction::get_avgspend()
 {
-    breakfast = b;
+    return avgspend;
 }
 
-void TravelDay::AddLunch(const Lunch& l)
+Attraction::Attraction(string name, double latitude, double longitude, double avgspend) : Location(name, latitude, longitude)
 {
-    lunch = l;
+    this->avgspend = avgspend;
 }
 
-void TravelDay::AddDinner(const Dinner& d)
+void Itinerary::DisplayItinerary()
 {
-    dinner = d;
+    for (int i = 0; i < TravelDays.size(); i++)
+    {
+        TravelDays[i].DisplayDay();
+    }
 }
 
-Travel::Travel(string o, string d, int dt_hrs, int dt_min = 0,  int at_hrs, int at_min = 0)
+
+void TravelDay::AddAction(Action* a)
+{
+    Actions.push_back(a);
+}
+
+void TravelDay::DisplayDay()
+{
+    for (int i = 0; i < Actions.size(); i++)
+    {
+        Actions[i]->PrintAction();
+    }
+}
+
+
+
+Travel::Travel(string o, string d, int dt_hrs, int dt_min = 0,  int at_hrs = 0, int at_min = 0)
 {
     origin = o;
     destination = d;
@@ -571,17 +672,21 @@ void Travel::PrintAction()
     
 }
 
+City::City() : Location(" ", 0, 0)
+{
+    population = 0;
+}
 
 
 TravelDay::TravelDay()
 {
 }
 
-City::City(const City& other) : Location(other.get_name(), other.get_latitude(), other.get_longitude()), country_name(other.country_name), population(other.population)
+City::City(const City& other) : Location(other.Location::get_name(), other.get_latitude(), other.Location::get_longitude()), country_name(other.country_name), population(other.population)
 {
     for (int i = 0; i < other.get_attractions_to_be_visited().size(); i++)
     {
-        AttractionsToBeVisited.push_back(Attraction(other.get_attractions_to_be_visited()[i].get_name(), other.get_attractions_to_be_visited()[i].get_latitude(), other.get_attractions_to_be_visited()[i].get_longitude(), other.get_attractions_to_be_visited()[i].get_avgspend()));
+        AttractionsToBeVisited.push_back(Attraction(other.get_attractions_to_be_visited()[i].Location::get_name(), other.get_attractions_to_be_visited()[i].get_latitude(), other.get_attractions_to_be_visited()[i].Location::get_longitude(), other.get_attractions_to_be_visited()[i].get_avgspend()));
     }
 }
 
